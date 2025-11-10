@@ -1,0 +1,52 @@
+{
+  "songs": [
+    {
+      "id": "song-001",
+      "title": "Bohemian Rhapsody",
+      "artistID": "artist-001",
+      "albumID": "album-001",
+      "duration": 355.0,
+      "artworkURL": "albums/A Night At The Opera (Remastered 2011)/cover.jpg",
+      "isLiked": false,
+      "localFilePath": "albums/A Night At The Opera (Remastered 2011)/Queen - Bohemian Rhapsody (Remastered 2011).mp3"
+    },
+    {
+      "id": "song-002",
+      "title": "Stairway to Heaven",
+      "artistID": "artist-002",
+      "albumID": "album-002",
+      "duration": 482.0,
+      "artworkURL": "albums/Led Zeppelin IV (Remaster)/cover.jpg",
+      "isLiked": true,
+      "localFilePath": "albums/Led Zeppelin IV (Remaster)/Led Zeppelin - Stairway to Heaven (Remaster).mp3"
+    }
+  ],
+  "albums": [
+    {
+      "id": "album-001",
+      "title": "A Night at the Opera (Remastered 2011)",
+      "artistID": "artist-001",
+      "trackCount": 12,
+      "releaseDate": "1975-11-21T00:00:00Z",
+      "artworkURL": "albums/A Night At The Opera (Remastered 2011)/cover.jpg"
+    },
+    {
+      "id": "album-002",
+      "title": "Led Zeppelin IV (Remaster)",
+      "artistID": "artist-002",
+      "trackCount": 8,
+      "releaseDate": "1971-11-08T00:00:00Z",
+      "artworkURL": "albums/Led Zeppelin IV (Remaster)/cover.jpg"
+    }
+  ],
+  "artists": [
+    {
+      "id": "artist-001",
+      "name": "Queen"
+    },
+    {
+      "id": "artist-002",
+      "name": "Led Zeppelin"
+    }
+  ]
+}

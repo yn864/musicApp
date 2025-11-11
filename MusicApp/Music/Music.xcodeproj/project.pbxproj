@@ -28,6 +28,9 @@
 		94AA79BF2EBDF28C00B4A234 /* PlayerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94AA79BE2EBDF28C00B4A234 /* PlayerService.swift */; };
 		94AA79C12EBDF93800B4A234 /* PlayerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94AA79C02EBDF93800B4A234 /* PlayerViewModel.swift */; };
 		94AA79C32EBDFC9800B4A234 /* PlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94AA79C22EBDFC9800B4A234 /* PlayerView.swift */; };
+		94AA79C62EC2235900B4A234 /* AlbumDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94AA79C52EC2235900B4A234 /* AlbumDetailView.swift */; };
+		94AA79C82EC2237D00B4A234 /* AlbumDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94AA79C72EC2237D00B4A234 /* AlbumDetailViewModel.swift */; };
+		94AA79CA2EC2238900B4A234 /* AlbumDetailInteractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94AA79C92EC2238900B4A234 /* AlbumDetailInteractor.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -53,6 +56,9 @@
 		94AA79BE2EBDF28C00B4A234 /* PlayerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerService.swift; sourceTree = "<group>"; };
 		94AA79C02EBDF93800B4A234 /* PlayerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerViewModel.swift; sourceTree = "<group>"; };
 		94AA79C22EBDFC9800B4A234 /* PlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerView.swift; sourceTree = "<group>"; };
+		94AA79C52EC2235900B4A234 /* AlbumDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlbumDetailView.swift; sourceTree = "<group>"; };
+		94AA79C72EC2237D00B4A234 /* AlbumDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlbumDetailViewModel.swift; sourceTree = "<group>"; };
+		94AA79C92EC2238900B4A234 /* AlbumDetailInteractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlbumDetailInteractor.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -143,6 +149,7 @@
 		94AA79802EAFA83E00B4A234 /* Modules */ = {
 			isa = PBXGroup;
 			children = (
+				94AA79C42EC2233A00B4A234 /* AlbumDetail */,
 				94AA79892EAFA89000B4A234 /* Profile */,
 				94AA79882EAFA88A00B4A234 /* Library */,
 				94AA79872EAFA88500B4A234 /* Player */,
@@ -270,6 +277,16 @@
 			path = Config;
 			sourceTree = "<group>";
 		};
+		94AA79C42EC2233A00B4A234 /* AlbumDetail */ = {
+			isa = PBXGroup;
+			children = (
+				94AA79C52EC2235900B4A234 /* AlbumDetailView.swift */,
+				94AA79C72EC2237D00B4A234 /* AlbumDetailViewModel.swift */,
+				94AA79C92EC2238900B4A234 /* AlbumDetailInteractor.swift */,
+			);
+			path = AlbumDetail;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -345,6 +362,7 @@
 				94AA796D2EAFA50C00B4A234 /* MusicApp.swift in Sources */,
 				94AA79AA2EB2257400B4A234 /* SwiftDataArtist.swift in Sources */,
 				94AA79B02EBB352C00B4A234 /* NetworkService.swift in Sources */,
+				94AA79CA2EC2238900B4A234 /* AlbumDetailInteractor.swift in Sources */,
 				94AA79AC2EB2291D00B4A234 /* MusicAppSchema.swift in Sources */,
 				94AA79972EAFAC9D00B4A234 /* Song.swift in Sources */,
 				94AA79A82EB2255100B4A234 /* SwiftDataAlbum.swift in Sources */,
@@ -354,7 +372,9 @@
 				94AA79B82EBB43D400B4A234 /* MusicRepository.swift in Sources */,
 				94AA79A32EAFAE1000B4A234 /* User.swift in Sources */,
 				94AA79BF2EBDF28C00B4A234 /* PlayerService.swift in Sources */,
+				94AA79C82EC2237D00B4A234 /* AlbumDetailViewModel.swift in Sources */,
 				94AA79A62EB2250300B4A234 /* SiwftDataSong.swift in Sources */,
+				94AA79C62EC2235900B4A234 /* AlbumDetailView.swift in Sources */,
 				94AA79BD2EBDF03600B4A234 /* Config.swift in Sources */,
 				94AA799F2EAFADF100B4A234 /* Playlist.swift in Sources */,
 				94AA79C32EBDFC9800B4A234 /* PlayerView.swift in Sources */,

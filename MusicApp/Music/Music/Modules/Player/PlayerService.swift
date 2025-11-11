@@ -9,13 +9,13 @@ protocol PlayerServiceProtocol: AnyObject {
     var isPlaying: Bool { get }
     var currentTime: TimeInterval { get }
     var duration: TimeInterval { get }
-    
+
     // Combine publishers
     var currentSongPublisher: Published<Song?>.Publisher { get }
     var isPlayingPublisher: Published<Bool>.Publisher { get }
     var currentTimePublisher: Published<TimeInterval>.Publisher { get }
     var durationPublisher: Published<TimeInterval>.Publisher { get }
-    
+
     func load(_ song: Song)
     func play()
     func pause()
@@ -30,7 +30,8 @@ class PlayerService: PlayerServiceProtocol, ObservableObject {
     @Published private(set) var isPlaying: Bool = false
     @Published private(set) var currentTime: TimeInterval = 0
     @Published private(set) var duration: TimeInterval = 0
-    
+    @Published private(set) var isSeeking: Bool = false 
+
     // MARK: - Publisher Properties (for protocol)
     var currentSongPublisher: Published<Song?>.Publisher { $currentSong }
     var isPlayingPublisher: Published<Bool>.Publisher { $isPlaying }
@@ -39,6 +40,7 @@ class PlayerService: PlayerServiceProtocol, ObservableObject {
 
     // MARK: - Private Properties
     private var player: AVPlayer?
+    private var currentPlayerItem: AVPlayerItem?
     private var timeObserver: Any?
     private var durationObserver: NSKeyValueObservation?
     private let logger = Logger(subsystem: "MusicPlayer", category: "PlayerService")
@@ -54,10 +56,9 @@ class PlayerService: PlayerServiceProtocol, ObservableObject {
 
     // MARK: - PlayerServiceProtocol Implementation
     func load(_ song: Song) {
-        // Останавливаем предыдущее воспроизведение если песня другая
-        if currentSong?.id != song.id {
-            cleanupPlayer()
-        }
+        logger.info("Загрузка песни: \(song.title)")
+
+        cleanupPlayer()
 
         guard let localFilePathString = song.localFilePath,
               let songURL = URL(string: localFilePathString, relativeTo: Config.apiBaseURL) else {
@@ -68,11 +69,14 @@ class PlayerService: PlayerServiceProtocol, ObservableObject {
         let newPlayerItem = AVPlayerItem(url: songURL)
         let newPlayer = AVPlayer(playerItem: newPlayerItem)
 
+    
         self.player = newPlayer
+        self.currentPlayerItem = newPlayerItem
         self.currentSong = song
         self.currentTime = 0
-        
-        // Сначала устанавливаем duration из Song как временное значение
+        self.isPlaying = false
+
+    
         self.duration = song.duration ?? 0
 
         setupDurationObserver(for: newPlayerItem)
@@ -108,10 +112,18 @@ class PlayerService: PlayerServiceProtocol, ObservableObject {
             return
         }
 
+        
+        isSeeking = true
+        currentTime = time
+
         let seekTime = CMTime(seconds: time, preferredTimescale: 1000)
         player.seek(to: seekTime, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] completed in
-            if completed {
-                self?.logger.debug("Перемотка завершена: \(time) секунд")
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                if completed {
+                    self.isSeeking = false
+                    self.logger.debug("Перемотка завершена: \(time) секунд")
+                }
             }
         }
     }
@@ -132,46 +144,55 @@ class PlayerService: PlayerServiceProtocol, ObservableObject {
     }
 
     private func cleanupPlayer() {
+        logger.debug("Начинаем очистку PlayerService...")
         removeTimeObserver()
         durationObserver?.invalidate()
         durationObserver = nil
-        
+
         player?.pause()
+        currentPlayerItem = nil
         player = nil
+
         currentSong = nil
         isPlaying = false
         currentTime = 0
         duration = 0
+        isSeeking = false
+        logger.debug("Очистка PlayerService завершена.")
     }
 
     // MARK: - Time Observer
     private func setupTimeObserver() {
         removeTimeObserver()
-        guard let player = player else { return }
-        
+        guard let player = player else {
+            logger.warning("setupTimeObserver: player отсутствует.")
+            return
+        }
+
         let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
         timeObserver = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
             guard let self = self else { return }
             let seconds = time.seconds
-            if seconds.isFinite && !seconds.isNaN {
+            if seconds.isFinite && !seconds.isNaN && !self.isSeeking {
                 self.currentTime = seconds
             }
         }
+        logger.debug("Time observer установлен.")
     }
 
     private func removeTimeObserver() {
         if let timeObserver = timeObserver {
             player?.removeTimeObserver(timeObserver)
             self.timeObserver = nil
+            logger.debug("Time observer удалён.")
         }
     }
 
     // MARK: - Duration Observer
     private func setupDurationObserver(for playerItem: AVPlayerItem) {
-        // Наблюдаем за реальной длительностью от AVPlayerItem
         durationObserver = playerItem.observe(\.duration, options: [.new, .initial]) { [weak self] item, change in
             guard let self = self else { return }
-            
+
             let newDuration = item.duration.seconds
             if newDuration.isFinite && newDuration > 0 {
                 DispatchQueue.main.async {
@@ -190,7 +211,7 @@ class PlayerService: PlayerServiceProtocol, ObservableObject {
             name: .AVPlayerItemDidPlayToEndTime,
             object: playerItem
         )
-        
+
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(playerItemFailedToPlay(_:)),
@@ -203,7 +224,7 @@ class PlayerService: PlayerServiceProtocol, ObservableObject {
     @objc private func playerItemDidPlayToEndTime(_ notification: Notification) {
         logger.info("Песня достигла конца.")
         isPlaying = false
-        currentTime = duration // Устанавливаем время в конец
+        currentTime = duration
     }
 
     @objc private func playerItemFailedToPlay(_ notification: Notification) {

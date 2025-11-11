@@ -29,7 +29,6 @@ class PlayerViewModel: ObservableObject {
 
     // MARK: - Setup Observers (Combine Publishers)
     private func setupPlayerServiceObservers() {
-        // Подписка на currentSong
         playerService.currentSongPublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] newSong in
@@ -40,7 +39,6 @@ class PlayerViewModel: ObservableObject {
             }
             .store(in: &cancellables)
 
-        // Подписка на isPlaying
         playerService.isPlayingPublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] newIsPlaying in
@@ -48,7 +46,6 @@ class PlayerViewModel: ObservableObject {
             }
             .store(in: &cancellables)
 
-        // Подписка на currentTime
         playerService.currentTimePublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] newTime in
@@ -56,7 +53,6 @@ class PlayerViewModel: ObservableObject {
             }
             .store(in: &cancellables)
 
-        // Подписка на duration
         playerService.durationPublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] newDuration in

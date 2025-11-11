@@ -12,13 +12,83 @@
     },
     {
       "id": "song-002",
-      "title": "Stairway to Heaven",
+      "title": "Black Dog (Remaster)",
+      "artistID": "artist-002",
+      "albumID": "album-002",
+      "duration": 295.0,
+      "artworkURL": "albums/Led Zeppelin IV (Remaster)/cover.jpg",
+      "isLiked": true,
+      "localFilePath": "albums/Led Zeppelin IV (Remaster)/Led Zeppelin - Black Dog (Remaster).mp3"
+    },
+    {
+      "id": "song-003",
+      "title": "Rock and Roll (Remaster)",
+      "artistID": "artist-002",
+      "albumID": "album-002",
+      "duration": 220.0,
+      "artworkURL": "albums/Led Zeppelin IV (Remaster)/cover.jpg",
+      "isLiked": false,
+      "localFilePath": "albums/Led Zeppelin IV (Remaster)/Led Zeppelin - Rock and Roll (Remaster).mp3"
+    },
+    {
+      "id": "song-004",
+      "title": "The Battle of Evermore (Remaster)",
+      "artistID": "artist-002",
+      "albumID": "album-002",
+      "duration": 351.0,
+      "artworkURL": "albums/Led Zeppelin IV (Remaster)/cover.jpg",
+      "isLiked": false,
+      "localFilePath": "albums/Led Zeppelin IV (Remaster)/Led Zeppelin - The Battle of Evermore (Remaster).mp3"
+    },
+    {
+      "id": "song-005",
+      "title": "Stairway to Heaven (Remaster)",
       "artistID": "artist-002",
       "albumID": "album-002",
       "duration": 482.0,
       "artworkURL": "albums/Led Zeppelin IV (Remaster)/cover.jpg",
       "isLiked": true,
       "localFilePath": "albums/Led Zeppelin IV (Remaster)/Led Zeppelin - Stairway to Heaven (Remaster).mp3"
+    },
+    {
+      "id": "song-006",
+      "title": "Misty Mountain Hop (Remaster)",
+      "artistID": "artist-002",
+      "albumID": "album-002",
+      "duration": 278.0,
+      "artworkURL": "albums/Led Zeppelin IV (Remaster)/cover.jpg",
+      "isLiked": false,
+      "localFilePath": "albums/Led Zeppelin IV (Remaster)/Led Zeppelin - Misty Mountain Hop (Remaster).mp3"
+    },
+    {
+      "id": "song-007",
+      "title": "Four Sticks (Remaster)",
+      "artistID": "artist-002",
+      "albumID": "album-002",
+      "duration": 285.0,
+      "artworkURL": "albums/Led Zeppelin IV (Remaster)/cover.jpg",
+      "isLiked": false,
+      "localFilePath": "albums/Led Zeppelin IV (Remaster)/Led Zeppelin - Four Sticks (Remaster).mp3"
+    },
+    {
+      "id": "song-008",
+      "title": "Going to California (Remaster)",
+      "artistID": "artist-002",
+      "albumID": "album-002",
+      "duration": 212.0,
+      "artworkURL": "albums/Led Zeppelin IV (Remaster)/cover.jpg",
+      "isLiked": false,
+      "localFilePath": "albums/Led Zeppelin IV (Remaster)/Led Zeppelin - Going to California (Remaster).mp3"
+    },
+    {
+      "id": "song-009",
+      "title": "When the Levee Breaks (Remaster)",
+      "artistID": "artist-002",
+      "albumID": "album-002",
+      "duration": 428.0,
+      "artworkURL": "albums/Led Zeppelin IV (Remaster)/cover.jpg",
+      "isLiked": false,
+      "localFilePath": "albums/Led Zeppelin IV (Remaster)/Led Zeppelin - When the Levee Breaks (Remaster).mp3"
     }
   ],
   "albums": [
@@ -28,7 +98,8 @@
       "artistID": "artist-001",
       "trackCount": 12,
       "releaseDate": "1975-11-21T00:00:00Z",
-      "artworkURL": "albums/A Night At The Opera (Remastered 2011)/cover.jpg"
+      "artworkURL": "albums/A Night At The Opera (Remastered 2011)/cover.jpg",
+      "songIDs": ["song-001"]
     },
     {
       "id": "album-002",
@@ -36,7 +107,11 @@
       "artistID": "artist-002",
       "trackCount": 8,
       "releaseDate": "1971-11-08T00:00:00Z",
-      "artworkURL": "albums/Led Zeppelin IV (Remaster)/cover.jpg"
+      "artworkURL": "albums/Led Zeppelin IV (Remaster)/cover.jpg",
+      "songIDs": [
+        "song-002", "song-003", "song-004", "song-005",
+        "song-006", "song-007", "song-008", "song-009"
+      ]
     }
   ],
   "artists": [

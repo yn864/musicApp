@@ -6,8 +6,6 @@ struct PlayerView: View {
 
     @State private var sliderValue: Double = 0.0
     @State private var isSliderBeingDragged = false
-    @State private var lastSeekTime: Date = Date()
-    @State private var ignoreUpdatesUntil: Date = Date()
 
     var body: some View {
         VStack(spacing: 20) {
@@ -25,25 +23,9 @@ struct PlayerView: View {
                 Text("No song loaded")
             }
 
-            // --- Слайдер для перемотки ---
             VStack {
                 Slider(
-                    value: Binding(
-                        get: {
-                            isSliderBeingDragged ? sliderValue : playerViewModel.currentTime
-                        },
-                        set: { newValue in
-                            sliderValue = newValue
-                            
-                            if isSliderBeingDragged {
-                                playerViewModel.seek(to: newValue)
-                                // УВЕЛИЧИВАЕМ время игнорирования до 0.8 секунд
-                                let ignoreUntil = Date().addingTimeInterval(0.8)
-                                ignoreUpdatesUntil = ignoreUntil
-                                lastSeekTime = Date()
-                            }
-                        }
-                    ),
+                    value: $sliderValue,
                     in: 0...max(playerViewModel.duration, 1),
                     onEditingChanged: { isEditing in
                         isSliderBeingDragged = isEditing
@@ -51,9 +33,6 @@ struct PlayerView: View {
                             sliderValue = playerViewModel.currentTime
                         } else {
                             playerViewModel.seek(to: sliderValue)
-                            let ignoreUntil = Date().addingTimeInterval(0.8)
-                            ignoreUpdatesUntil = ignoreUntil
-                            lastSeekTime = Date()
                         }
                     }
                 )
@@ -85,26 +64,22 @@ struct PlayerView: View {
                 }
                 .disabled(true)
             }
-
-            Button("Play Song (song-001)") {
-                Task {
-                    await playerViewModel.playSong(id: "song-001")
-                }
-            }
         }
         .padding()
-        .onChange(of: playerViewModel.currentTime) { oldTime, newTime in
-            let now = Date()
-            // ОБНОВЛЯЕМ СЛАЙДЕР ТОЛЬКО ЕСЛИ:
-            // 1. Не перетаскиваем
-            // 2. И текущее время ПОСЛЕ времени до которого игнорируем
-            if !isSliderBeingDragged && now > ignoreUpdatesUntil {
+        .onReceive(playerViewModel.$currentTime) { newTime in
+            if !isSliderBeingDragged {
                 sliderValue = newTime
             }
         }
         .onAppear {
             sliderValue = playerViewModel.currentTime
         }
+        .onDisappear {
+           if playerViewModel.isPlaying {
+               print("DEBUG: PlayerView исчезает, ставим на паузу.")
+               playerViewModel.togglePlayPause()
+           }
+       }
     }
 
     private func formatTime(_ timeInterval: TimeInterval) -> String {

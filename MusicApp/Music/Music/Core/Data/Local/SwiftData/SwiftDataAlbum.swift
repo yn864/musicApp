@@ -5,18 +5,20 @@ import SwiftData
 final class SwiftDataAlbum {
     var id: String
     var title: String
-    var releaseDate: Date?
+    var releaseDate: String?
     var artworkURL: String?
     var trackCount: Int
-
-    // Связи
+    var songIDs: [String] = []
+    
     @Relationship(inverse: \SwiftDataArtist.albums)
     var artist: SwiftDataArtist?
 
+    
     @Relationship(deleteRule: .cascade)
     var songs: [SwiftDataSong] = []
+     
 
-    init(id: String = UUID().uuidString, title: String, releaseDate: Date? = nil, artworkURL: String? = nil, trackCount: Int = 0, artist: SwiftDataArtist? = nil) {
+    init(id: String = UUID().uuidString, title: String, releaseDate: String? = nil, artworkURL: String? = nil, trackCount: Int = 0, artist: SwiftDataArtist? = nil) {
         self.id = id
         self.title = title
         self.releaseDate = releaseDate
@@ -47,6 +49,7 @@ extension SwiftDataAlbum {
             artworkURL: album.artworkURL,
             trackCount: album.trackCount
         )
+         sdAlbum.songIDs = album.songIDs
         return sdAlbum
     }
 }

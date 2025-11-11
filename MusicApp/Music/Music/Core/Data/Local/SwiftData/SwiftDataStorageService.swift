@@ -122,6 +122,7 @@ class SwiftDataStorageService: SwiftDataStorageServiceProtocol {
 
         let sdAlbum = SwiftDataAlbum.fromDomainModel(domainAlbum)
         sdAlbum.artist = sdArtist
+        sdAlbum.songIDs = domainAlbum.songIDs
 
         if !domainAlbum.songIDs.isEmpty {
             let sdSongs = try getSongsSD(by: domainAlbum.songIDs, in: context)
@@ -168,6 +169,11 @@ class SwiftDataStorageService: SwiftDataStorageServiceProtocol {
         sdAlbum.trackCount = domainAlbum.trackCount
         sdAlbum.releaseDate = domainAlbum.releaseDate
         sdAlbum.artworkURL = domainAlbum.artworkURL
+         sdAlbum.songIDs = domainAlbum.songIDs
+        if !domainAlbum.songIDs.isEmpty {
+            let sdSongs = try getSongsSD(by: domainAlbum.songIDs, in: container.mainContext)
+            sdAlbum.songs = sdSongs
+        }
         try container.mainContext.save()
     }
 

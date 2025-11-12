@@ -24,6 +24,8 @@ protocol MusicRepositoryProtocol {
     func getAlbumFromLocal(by id: Album.ID) async throws -> Album?
     func getArtistFromLocal(by id: Artist.ID) async throws -> Artist?
     func getLikedSongsFromLocal() async throws -> [Song]
+    
+    func fetchImage(from urlString: String) async throws -> Data?
 
 }
 
@@ -106,6 +108,10 @@ final class MusicRepository: MusicRepositoryProtocol {
 
     func getLikedSongsFromLocal() async throws -> [Song] {
         return try storageService.getLikedSongs()
+    }
+    
+    func fetchImage(from urlString: String) async throws -> Data? {
+        return try await networkService.fetchImage(from: urlString)
     }
 
 }

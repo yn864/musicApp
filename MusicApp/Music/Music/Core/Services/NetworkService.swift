@@ -11,6 +11,8 @@ protocol NetworkServiceProtocol {
     func fetchSong(by id: String) async throws -> Song?
     func fetchAlbum(by id: String) async throws -> Album?
     func fetchArtist(by id: String) async throws -> Artist?
+    
+    func fetchImage(from urlString: String) async throws -> Data?
 }
 
 // MARK: - NetworkService Implementation (using URLSession)
@@ -51,6 +53,26 @@ final class NetworkService: NetworkServiceProtocol {
     func fetchArtist(by id: String) async throws -> Artist? {
         let endpointURL = baseURL.appendingPathComponent("artists").appendingPathComponent(id)
         return try await fetchData(from: endpointURL, as: Artist.self)
+    }
+    
+    func fetchImage(from urlString: String) async throws -> Data? {
+        let fullURLString = Config.apiBaseURLString + "/" + urlString
+        guard let url = URL(string: fullURLString) else {
+            throw NetworkError.invalidURL
+        }
+
+        let (data, response) = try await URLSession.shared.data(from: url)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw NetworkError.httpError(statusCode: -1)
+        }
+
+        guard 200..<300 ~= httpResponse.statusCode else {
+            print("HTTP Error: \(httpResponse.statusCode) for URL: \(url)")
+            throw NetworkError.httpError(statusCode: httpResponse.statusCode)
+        }
+
+        return data
     }
 
     // MARK: - Generic Helper for Fetching Data

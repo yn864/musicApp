@@ -1,20 +1,24 @@
 import SwiftUI
+import UIKit
 
+// MARK: - AlbumDetailView
 struct AlbumDetailView: View {
-    // MARK: - Dependencies (передаём сюда, т.к. создаются в ContentView)
+    // MARK: - Dependencies
     let musicRepository: MusicRepository
     let playerInteractor: PlayerInteractor
     let albumID: String
 
-    // MARK: - ViewModel (управляет собой, используя @StateObject)
+    // MARK: - ViewModel
     @StateObject private var viewModel: AlbumDetailViewModel
+
+    // MARK: - State для UIImage
+    @State private var albumArtworkImage: UIImage? = nil
 
     // MARK: - Init
     init(musicRepository: MusicRepository, playerInteractor: PlayerInteractor, albumID: String) {
         self.musicRepository = musicRepository
         self.playerInteractor = playerInteractor
         self.albumID = albumID
-        // Создаём Interactor и ViewModel внутри View
         let interactor = AlbumDetailInteractor(musicRepository: musicRepository, playerInteractor: playerInteractor)
         _viewModel = StateObject(wrappedValue: AlbumDetailViewModel(interactor: interactor))
     }
@@ -33,26 +37,30 @@ struct AlbumDetailView: View {
             }
         }
         .onAppear {
-            // Загружаем альбом при появлении View
             viewModel.loadAlbum(by: albumID)
+        }
+        .onChange(of: viewModel.albumArtworkData) { _, newData in
+            if let data = newData {
+                self.albumArtworkImage = UIImage(data: data)
+            } else {
+                self.albumArtworkImage = nil
+            }
         }
     }
 
     private var content: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // Обложка, название, исполнитель
             albumHeader
-
-            // Кнопка PLAY для всего альбома
             playAlbumButton
 
-            // Разделитель "Songs"
-            Text("Songs (\(viewModel.songs.count))") // <--- Показываем количество
+            Text("Songs (\(viewModel.songs.count))")
                 .font(.headline)
 
-            // Список песен
             ForEach(viewModel.songs) { song in
-                SongRowView(song: song) {
+                SongRowView(
+                    song: song,
+                    artistName: viewModel.albumArtist?.name ?? song.artistID
+                ) {
                     viewModel.playSong(song)
                 }
             }
@@ -62,17 +70,15 @@ struct AlbumDetailView: View {
 
     private var albumHeader: some View {
         HStack(alignment: .top, spacing: 16) {
-            // Исправляем URL обложки
-            let safeArtworkURLString = viewModel.album?.artworkURL?
-                .addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)
-            AsyncImage(url: safeArtworkURLString.flatMap { URL(string: $0) }) { image in
-                image
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-            } placeholder: {
-                Rectangle()
-                    .fill(Color.gray.opacity(0.3))
-                    .frame(width: 150, height: 150)
+            Group {
+                if let image = albumArtworkImage {
+                    Image(uiImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                } else {
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.3))
+                }
             }
             .frame(width: 150, height: 150)
             .clipShape(RoundedRectangle(cornerRadius: 5))
@@ -82,7 +88,7 @@ struct AlbumDetailView: View {
                     .font(.title2.bold())
                     .lineLimit(2)
 
-                Text(artistName(for: viewModel.album?.artistID ?? ""))
+                Text(viewModel.albumArtist?.name ?? "Unknown Artist")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
 
@@ -120,19 +126,12 @@ struct AlbumDetailView: View {
         }
         .disabled(viewModel.songs.isEmpty)
     }
-
-    private func artistName(for artistID: String) -> String {
-        let artistNames = [
-            "artist-001": "Queen",
-            "artist-002": "Led Zeppelin"
-        ]
-        return artistNames[artistID] ?? artistID
-    }
 }
 
 // MARK: - SongRowView (вспомогательный View для строки песни)
 struct SongRowView: View {
     let song: Song
+    let artistName: String
     let onPlayTapped: () -> Void
 
     var body: some View {
@@ -140,7 +139,7 @@ struct SongRowView: View {
             VStack(alignment: .leading) {
                 Text(song.title)
                     .font(.body)
-                Text(artistName(for: song.artistID))
+                Text(artistName)
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -157,14 +156,6 @@ struct SongRowView: View {
                 .frame(width: 40, alignment: .trailing)
         }
         .padding(.vertical, 4)
-    }
-
-    private func artistName(for artistID: String) -> String {
-        let artistNames = [
-            "artist-001": "Queen",
-            "artist-002": "Led Zeppelin"
-        ]
-        return artistNames[artistID] ?? artistID
     }
 
     private func formatTime(_ timeInterval: TimeInterval?) -> String {

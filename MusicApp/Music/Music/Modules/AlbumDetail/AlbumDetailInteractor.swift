@@ -2,8 +2,10 @@ import Foundation
 
 // MARK: - AlbumDetailInteractorProtocol
 protocol AlbumDetailInteractorProtocol {
-    func loadAlbum(by id: String) async throws -> (album: Album, songs: [Song])? // <--- Меняем возвращаемый тип
+    func loadAlbum(by id: String) async throws -> (album: Album, songs: [Song])?
     func playSong(with id: String) async
+    func fetchArtist(by id: Artist.ID) async throws -> Artist?
+    func fetchImageData(from urlString: String) async throws -> Data?
 }
 
 // MARK: - AlbumDetailInteractor
@@ -15,47 +17,49 @@ class AlbumDetailInteractor: AlbumDetailInteractorProtocol {
         self.musicRepository = musicRepository
         self.playerInteractor = playerInteractor
     }
-
-    // func loadSongs(by ids: [String]) async throws -> [Song] { // <--- Убираем, если не используется где-то ещё
-    //     var songs: [Song] = []
-    //     for songID in ids {
-    //         if let song = try await musicRepository.fetchSongFromAPI(by: songID) {
-    //             songs.append(song)
-    //         } else {
-    //             print("DEBUG: Не удалось загрузить песню с ID: \(songID)")
-    //         }
-    //     }
-    //     print("DEBUG: AlbumDetailInteractor.loadSongs вернул \(songs.count) песен.")
-    //     return songs
-    // }
-
-    // Изменяем loadAlbum: всегда загружаем с API, возвращаем и альбом, и песни
+    
     func loadAlbum(by id: String) async throws -> (album: Album, songs: [Song])? {
         print("DEBUG: AlbumDetailInteractor: Загружаем альбом \(id) с API.")
-        // 1. Загружаем альбом с API
         guard let album = try await musicRepository.fetchAlbumFromAPI(by: id) else {
             print("DEBUG: AlbumDetailInteractor: Не удалось загрузить альбом \(id) с API.")
             return nil
         }
 
-        print("DEBUG: AlbumDetailInteractor: Загружен альбом \(id) с \(album.songIDs.count) песнями. Начинаем загружать песни.")
-        // 2. Загружаем песни по ID
-        var songs: [Song] = []
-        for songID in album.songIDs {
-            if let song = try await musicRepository.fetchSongFromAPI(by: songID) {
-                songs.append(song)
-            } else {
-                print("DEBUG: AlbumDetailInteractor: Не удалось загрузить песню \(songID) для альбома \(id).")
+        print("DEBUG: AlbumDetailInteractor: Загружен альбом \(id) с \(album.songIDs.count) песнями. Начинаем параллельную загрузку песен с сохранением порядка.")
+        
+        let songsWithIndex = await withTaskGroup(of: (index: Int, song: Song?)?.self) { group in
+            for (index, songID) in album.songIDs.enumerated() {
+                group.addTask {
+                    let song = try? await self.musicRepository.fetchSongFromAPI(by: songID)
+                    return (index: index, song: song)
+                }
             }
+            var results: [(index: Int, song: Song?)] = []
+            for await result in group {
+                if let unwrapped = result {
+                    results.append(unwrapped)
+                }
+            }
+            return results
         }
+        
+        let sortedSongs = songsWithIndex
+            .sorted { $0.index < $1.index }
+            .compactMap { $0.song }
 
-        print("DEBUG: AlbumDetailInteractor: Загружено \(songs.count) песен для альбома \(id).")
-        // 3. Возвращаем и альбом, и песни
-        return (album: album, songs: songs)
+        print("DEBUG: AlbumDetailInteractor: Загружено \(sortedSongs.count) песен для альбома \(id) в правильном порядке.")
+        return (album: album, songs: sortedSongs)
     }
 
     func playSong(with id: String) async {
-        // Просто делегируем PlayerInteractor
         try? await playerInteractor.playSong(with: id)
+    }
+    
+    func fetchArtist(by id: Artist.ID) async throws -> Artist? {
+        return try await musicRepository.fetchArtistFromAPI(by: id)
+    }
+    
+    func fetchImageData(from urlString: String) async throws -> Data? {
+        return try await musicRepository.fetchImage(from: urlString)
     }
 }

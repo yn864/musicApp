@@ -4,23 +4,16 @@ import UIKit
 // MARK: - AlbumDetailView
 struct AlbumDetailView: View {
     // MARK: - Dependencies
-    let musicRepository: MusicRepository
-    let playerInteractor: PlayerInteractor
+    @ObservedObject var viewModel: AlbumDetailViewModel
     let albumID: String
+    let playerViewModel: PlayerViewModel
 
-    // MARK: - ViewModel
-    @StateObject private var viewModel: AlbumDetailViewModel
-
-    // MARK: - State для UIImage
-    @State private var albumArtworkImage: UIImage? = nil
-
+    
     // MARK: - Init
-    init(musicRepository: MusicRepository, playerInteractor: PlayerInteractor, albumID: String) {
-        self.musicRepository = musicRepository
-        self.playerInteractor = playerInteractor
+    init(viewModel: AlbumDetailViewModel, albumID: String, playerViewModel: PlayerViewModel) {
+        self.viewModel = viewModel
         self.albumID = albumID
-        let interactor = AlbumDetailInteractor(musicRepository: musicRepository, playerInteractor: playerInteractor)
-        _viewModel = StateObject(wrappedValue: AlbumDetailViewModel(interactor: interactor))
+        self.playerViewModel = playerViewModel
     }
 
     var body: some View {
@@ -39,13 +32,6 @@ struct AlbumDetailView: View {
         .onAppear {
             viewModel.loadAlbum(by: albumID)
         }
-        .onChange(of: viewModel.albumArtworkData) { _, newData in
-            if let data = newData {
-                self.albumArtworkImage = UIImage(data: data)
-            } else {
-                self.albumArtworkImage = nil
-            }
-        }
     }
 
     private var content: some View {
@@ -57,12 +43,15 @@ struct AlbumDetailView: View {
                 .font(.headline)
 
             ForEach(viewModel.songs) { song in
-                SongRowView(
-                    song: song,
-                    artistName: viewModel.albumArtist?.name ?? song.artistID
-                ) {
-                    viewModel.playSong(song)
+                NavigationLink(destination: PlayerView(playerViewModel: playerViewModel)) {
+                    SongRowView(
+                        song: song,
+                        artistName: viewModel.albumArtist?.name ?? song.artistID
+                    )
                 }
+                .simultaneousGesture(TapGesture().onEnded {
+                    viewModel.playSong(song)
+                })
             }
         }
         .padding()
@@ -71,7 +60,8 @@ struct AlbumDetailView: View {
     private var albumHeader: some View {
         HStack(alignment: .top, spacing: 16) {
             Group {
-                if let image = albumArtworkImage {
+                if let artworkData = viewModel.albumArtworkData,
+                   let image = UIImage(data: artworkData) {
                     Image(uiImage: image)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
@@ -128,11 +118,12 @@ struct AlbumDetailView: View {
     }
 }
 
+
 // MARK: - SongRowView (вспомогательный View для строки песни)
 struct SongRowView: View {
     let song: Song
     let artistName: String
-    let onPlayTapped: () -> Void
+    
 
     var body: some View {
         HStack {
@@ -144,11 +135,7 @@ struct SongRowView: View {
                     .foregroundColor(.secondary)
             }
             Spacer()
-            Button(action: onPlayTapped) {
-                Image(systemName: "play.circle.fill")
-                    .font(.title2)
-            }
-            .buttonStyle(PlainButtonStyle())
+
 
             Text(formatTime(song.duration ?? 0))
                 .font(.caption)
@@ -156,6 +143,7 @@ struct SongRowView: View {
                 .frame(width: 40, alignment: .trailing)
         }
         .padding(.vertical, 4)
+        .contentShape(Rectangle())
     }
 
     private func formatTime(_ timeInterval: TimeInterval?) -> String {

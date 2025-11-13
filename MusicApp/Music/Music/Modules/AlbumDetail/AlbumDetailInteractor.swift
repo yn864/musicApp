@@ -3,7 +3,7 @@ import Foundation
 // MARK: - AlbumDetailInteractorProtocol
 protocol AlbumDetailInteractorProtocol {
     func loadAlbum(by id: String) async throws -> (album: Album, songs: [Song])?
-    func playSong(with id: String) async
+    func playSong(with id: String, from songIDs: [String]) async
     func fetchArtist(by id: Artist.ID) async throws -> Artist?
     func fetchImageData(from urlString: String) async throws -> Data?
 }
@@ -19,13 +19,9 @@ class AlbumDetailInteractor: AlbumDetailInteractorProtocol {
     }
     
     func loadAlbum(by id: String) async throws -> (album: Album, songs: [Song])? {
-        print("DEBUG: AlbumDetailInteractor: Загружаем альбом \(id) с API.")
         guard let album = try await musicRepository.fetchAlbumFromAPI(by: id) else {
-            print("DEBUG: AlbumDetailInteractor: Не удалось загрузить альбом \(id) с API.")
             return nil
         }
-
-        print("DEBUG: AlbumDetailInteractor: Загружен альбом \(id) с \(album.songIDs.count) песнями. Начинаем параллельную загрузку песен с сохранением порядка.")
         
         let songsWithIndex = await withTaskGroup(of: (index: Int, song: Song?)?.self) { group in
             for (index, songID) in album.songIDs.enumerated() {
@@ -47,12 +43,11 @@ class AlbumDetailInteractor: AlbumDetailInteractorProtocol {
             .sorted { $0.index < $1.index }
             .compactMap { $0.song }
 
-        print("DEBUG: AlbumDetailInteractor: Загружено \(sortedSongs.count) песен для альбома \(id) в правильном порядке.")
         return (album: album, songs: sortedSongs)
     }
 
-    func playSong(with id: String) async {
-        try? await playerInteractor.playSong(with: id)
+    func playSong(with id: String, from songIDs: [String]) async {
+        try? await playerInteractor.playSong(with: id, from: songIDs)
     }
     
     func fetchArtist(by id: Artist.ID) async throws -> Artist? {

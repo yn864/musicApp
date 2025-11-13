@@ -1,65 +1,17 @@
 import SwiftUI
 import SwiftData
 
-struct ContentView: View {
-    // MARK: - State
-    @State private var playerViewModel: PlayerViewModel?
-    // Убираем @State для AlbumDetailViewModel
-    @State private var showingAlbumView = true // Теперь по умолчанию true
+// MARK: - Coordinator for shared dependencies
+class AppCoordinator: ObservableObject {
+    @Published var playerService: PlayerService
+    @Published var musicRepository: MusicRepository
+    @Published var playerInteractor: PlayerInteractor
+    @Published var playerViewModel: PlayerViewModel
+    @Published var albumDetailInteractor: AlbumDetailInteractor
+    @Published var albumDetailViewModel: AlbumDetailViewModel
+    @Published var homeViewModel: HomeViewModel
 
-    // MARK: - Dependencies (хранятся как обычные переменные, создаются в task)
-    @State private var musicRepository: MusicRepository?
-    @State private var playerInteractor: PlayerInteractor?
-    @State private var playerService: PlayerService?
-
-    var body: some View {
-        ZStack {
-            if showingAlbumView {
-                // Передаём зависимости в AlbumDetailView
-                // AlbumDetailView сам создаст и управляется своим ViewModel
-                if let repo = musicRepository, let pInteractor = playerInteractor {
-                    AlbumDetailView(musicRepository: repo, playerInteractor: pInteractor, albumID: "album-002")
-                } else {
-                    ProgressView("Загрузка зависимостей...")
-                }
-            } else if let playerVM = playerViewModel {
-                PlayerView(playerViewModel: playerVM)
-            } else {
-                ProgressView("Загрузка...")
-            }
-
-            // Постоянно отображаемая кнопка переключения
-            VStack {
-                Spacer()
-                HStack {
-                    Spacer()
-                    Button(action: {
-                        showingAlbumView.toggle()
-                    }) {
-                        Text(showingAlbumView ? "К плееру" : "К альбому")
-                            .padding()
-                            .background(Color.blue)
-                            .foregroundColor(.white)
-                            .cornerRadius(8)
-                    }
-                    .padding()
-                    Spacer()
-                }
-                .padding(.bottom)
-            }
-        }
-        .task {
-            await createDependencies()
-        }
-        .task {
-            await runTestScenarios()
-        }
-    }
-
-    // MARK: - Dependency Creation
-    private func createDependencies() async {
-        print("Создаём зависимости для PlayerViewModel и AlbumDetailViewModel...")
-
+    init() {
         do {
             let schema = Schema([SwiftDataSong.self, SwiftDataAlbum.self, SwiftDataArtist.self])
             let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
@@ -71,60 +23,70 @@ struct ContentView: View {
             let playerServ = PlayerService()
             let playerInteract = PlayerInteractor(musicRepository: musicRepo, playerService: playerServ)
             let playerVM = PlayerViewModel(playerInteractor: playerInteract, playerService: playerServ)
+            let albumDetailInteract = AlbumDetailInteractor(musicRepository: musicRepo, playerInteractor: playerInteract)
+            let albumDetailVM = AlbumDetailViewModel(interactor: albumDetailInteract)
+            let homeInteractor = HomeInteractor(musicRepository: musicRepo)
+            let homeVM = HomeViewModel(interactor: homeInteractor)
 
-            await MainActor.run {
-                self.musicRepository = musicRepo
-                self.playerInteractor = playerInteract
-                self.playerService = playerServ
-                self.playerViewModel = playerVM
-            }
-
-            print("Все зависимости созданы успешно.")
+            self.musicRepository = musicRepo
+            self.playerService = playerServ
+            self.playerInteractor = playerInteract
+            self.playerViewModel = playerVM
+            self.albumDetailInteractor = albumDetailInteract
+            self.albumDetailViewModel = albumDetailVM
+            self.homeViewModel = homeVM
 
         } catch {
-            print("Ошибка при создании зависимостей: \(error)")
+            fatalError("Failed to create AppCoordinator: \(error)")
         }
     }
+}
 
-    // MARK: - Combined Test Scenarios
-    private func runTestScenarios() async {
-        print("Запускаем тестовые сценарии...")
+struct ContentView: View {
+    // MARK: - Shared Dependencies & ViewModels
+    @StateObject private var appCoordinator = AppCoordinator()
 
-        var attempts = 0
-        while playerViewModel == nil || musicRepository == nil {
-            if attempts > 20 {
-                print("Таймаут ожидания зависимостей")
-                return
+    // MARK: - Tab Selection
+    @State private var selectedTab = 0
+
+    var body: some View {
+        TabView(selection: $selectedTab) {
+            // MARK: - Home Tab
+            NavigationStack {
+                HomeView(
+                    viewModel: appCoordinator.homeViewModel,
+                    albumDetailViewModel: appCoordinator.albumDetailViewModel,
+                    playerViewModel: appCoordinator.playerViewModel
+                )
             }
-            try? await Task.sleep(for: .milliseconds(100))
-            attempts += 1
+            .tabItem {
+                Image(systemName: "house.fill")
+                Text("Home")
+            }
+            .tag(0)
+
+            // MARK: - Search Tab
+            NavigationStack {
+                Text("Search Tab - Coming Soon")
+                    .navigationTitle("Search")
+            }
+            .tabItem {
+                Image(systemName: "magnifyingglass")
+                Text("Search")
+            }
+            .tag(1)
+
+            // MARK: - Library Tab
+            NavigationStack {
+                Text("Library Tab - Coming Soon")
+                    .navigationTitle("Library")
+            }
+            .tabItem {
+                Image(systemName: "music.note.list")
+                Text("Library")
+            }
+            .tag(2)
         }
-
-        print("Запускаем сценарий плеера...")
-        if !showingAlbumView {
-            await setupTestScenario(viewModel: playerViewModel!)
-        } else {
-            print("Пропускаем сценарий плеера, так как начинаем с альбома.")
-        }
-
-        print("Запускаем сценарий альбома...")
-        // AlbumDetailViewModel создаётся и управляет загрузкой ВНУТРИ AlbumDetailView
-        // Мы НЕ можем вызвать setupAlbumTestScenario(viewModel:) здесь, т.к. нет доступа к viewModel
-        print("Пропускаем сценарий альбома в ContentView. Он запускается в AlbumDetailView.onAppear.")
-    }
-
-    // MARK: - Player Test Scenario
-    private func setupTestScenario(viewModel: PlayerViewModel) async {
-        print("Начинаем тестовый сценарий через PlayerViewModel...")
-        print("Загружаем и проигрываем песню song-001...")
-        await viewModel.playSong(id: "song-001")
-        try? await Task.sleep(for: .seconds(2))
-        print("Состояние в PlayerViewModel:")
-        print("  - currentSongTitle: \(viewModel.currentSongTitle)")
-        print("  - isPlaying: \(viewModel.isPlaying)")
-        print("  - currentTime: \(viewModel.currentTime)")
-        print("  - duration: \(viewModel.duration)")
-        print("Тестовый сценарий плеера завершён.")
     }
 }
 

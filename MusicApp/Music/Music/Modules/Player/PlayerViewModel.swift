@@ -13,8 +13,8 @@ class PlayerViewModel: ObservableObject {
 
     // MARK: - State Properties (для UI)
     @Published var currentSong: Song? = nil
+    @Published var currentArtist: Artist? = nil
     @Published var currentSongTitle: String = "No song"
-    @Published var currentSongArtistID: String = ""
     @Published var isPlaying: Bool = false
     @Published var currentTime: TimeInterval = 0
     @Published var duration: TimeInterval = 0
@@ -35,7 +35,11 @@ class PlayerViewModel: ObservableObject {
                 guard let self = self else { return }
                 self.currentSong = newSong
                 self.currentSongTitle = newSong?.title ?? "No song"
-                self.currentSongArtistID = newSong?.artistID ?? ""
+                if let artistID = newSong?.artistID {
+                    self.loadArtist(by: artistID)
+                } else {
+                    self.currentArtist = nil
+                }
             }
             .store(in: &cancellables)
 
@@ -61,21 +65,48 @@ class PlayerViewModel: ObservableObject {
             .store(in: &cancellables)
     }
 
-    // MARK: - Commands (Actions from UI)
-    func playSong(id: String) async {
-        do {
-            try await playerInteractor.playSong(with: id)
-        } catch {
-            print("Error playing song: \(error)")
+    private func loadArtist(by id: Artist.ID) {
+        Task {
+            do {
+                let artist = try await playerInteractor.fetchArtist(by: id)
+                await MainActor.run {
+                    self.currentArtist = artist
+                }
+            } catch {
+                await MainActor.run {
+                    self.currentArtist = nil
+                }
+            }
         }
     }
 
+    // MARK: - Commands (Actions from UI)
     func togglePlayPause() {
-        playerService.togglePlayPause()
+        playerInteractor.togglePlayPause()
     }
 
     func seek(to time: TimeInterval) {
-        playerService.seek(to: time)
+        playerInteractor.seek(to: time)
+    }
+
+    func playNextSong() {
+        Task {
+            do {
+                try await playerInteractor.playNextSong()
+            } catch {
+                print("Error playing next song: \(error)")
+            }
+        }
+    }
+
+    func playPreviousSong() {
+        Task {
+            do {
+                try await playerInteractor.playPreviousSong()
+            } catch {
+                print("Error playing previous song: \(error)")
+            }
+        }
     }
 
     // MARK: - Cleanup

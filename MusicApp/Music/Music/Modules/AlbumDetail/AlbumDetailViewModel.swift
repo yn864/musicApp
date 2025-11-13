@@ -24,11 +24,12 @@ class AlbumDetailViewModel: ObservableObject {
 
     // MARK: - Commands (Actions from UI)
     func loadAlbum(by id: String) {
-        guard id != currentAlbumID else {
-            print("DEBUG: AlbumDetailViewModel: Альбом \(id) уже загружен — пропускаем запрос.")
+        if id == currentAlbumID {
             return
         }
+        
         currentAlbumID = id
+        
         Task {
             await loadAlbumAsync(by: id)
         }
@@ -42,7 +43,11 @@ class AlbumDetailViewModel: ObservableObject {
 
     func playSong(_ song: Song) {
         Task {
-            await interactor.playSong(with: song.id)
+            guard let album = self.album else {
+                await self.interactor.playSong(with: song.id, from: [song.id])
+                return
+            }
+            await self.interactor.playSong(with: song.id, from: album.songIDs)
         }
     }
 
@@ -58,10 +63,15 @@ class AlbumDetailViewModel: ObservableObject {
         await MainActor.run {
             self.isLoading = true
             self.errorMessage = nil
+            if self.album?.id != id {
+                self.album = nil
+                self.songs = []
+                self.albumArtist = nil
+                self.albumArtworkData = nil
+            }
         }
 
         do {
-            print("DEBUG: AlbumDetailViewModel: Загружаем альбом \(id) с API (без кэша).")
             guard let (album, songs) = try await interactor.loadAlbum(by: id) else {
                 await MainActor.run {
                     self.errorMessage = "Album not found"
@@ -72,8 +82,6 @@ class AlbumDetailViewModel: ObservableObject {
             await MainActor.run {
                 self.album = album
                 self.songs = songs
-                self.currentAlbumID = id
-                print("DEBUG: AlbumDetailViewModel.songs обновлён, количество: \(songs.count)")
             }
 
             await loadArtistAsync(by: album.artistID)
@@ -95,14 +103,11 @@ class AlbumDetailViewModel: ObservableObject {
 
     private func loadArtistAsync(by id: String) async {
         do {
-            print("DEBUG: AlbumDetailViewModel: Загружаем артиста \(id) для альбома.")
             guard let artist = try await interactor.fetchArtist(by: id) else {
-                print("DEBUG: AlbumDetailViewModel: Артист \(id) не найден.")
                 return
             }
             await MainActor.run {
                 self.albumArtist = artist
-                print("DEBUG: AlbumDetailViewModel: Артист \(artist.name) загружен.")
             }
         } catch {
             print("DEBUG: AlbumDetailViewModel: Ошибка загрузки артиста \(id): \(error)")
@@ -111,14 +116,11 @@ class AlbumDetailViewModel: ObservableObject {
 
     private func loadAlbumArtworkAsync(from urlString: String) async {
         do {
-            print("DEBUG: AlbumDetailViewModel: Загружаем обложку по пути: \(urlString)")
             guard let imageData = try await interactor.fetchImageData(from: urlString) else {
-                print("DEBUG: AlbumDetailViewModel: Обложка не найдена по пути: \(urlString)")
                 return
             }
             await MainActor.run {
                 self.albumArtworkData = imageData
-                print("DEBUG: AlbumDetailViewModel: Обложка загружена, размер: \(imageData.count) байт")
             }
         } catch {
             print("DEBUG: AlbumDetailViewModel: Ошибка загрузки обложки \(urlString): \(error)")

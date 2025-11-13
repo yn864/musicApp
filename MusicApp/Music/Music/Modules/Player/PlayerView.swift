@@ -9,6 +9,26 @@ struct PlayerView: View {
 
     var body: some View {
         VStack(spacing: 20) {
+            if let artworkURLString = playerViewModel.currentSong?.artworkURL,
+               let artworkURL = URL(string: artworkURLString, relativeTo: Config.apiBaseURL) {
+                AsyncImage(url: artworkURL) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .cornerRadius(10)
+                } placeholder: {
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.3))
+                        .cornerRadius(10)
+                }
+                .frame(width: 200, height: 200)
+            } else {
+                Rectangle()
+                    .fill(Color.gray.opacity(0.3))
+                    .cornerRadius(10)
+                    .frame(width: 200, height: 200)
+            }
+
             Text("Player View")
                 .font(.title)
 
@@ -16,7 +36,7 @@ struct PlayerView: View {
                 VStack {
                     Text(currentSong.title)
                         .font(.headline)
-                    Text(currentSong.artistID)
+                    Text(playerViewModel.currentArtist?.name ?? currentSong.artistID)
                         .font(.subheadline)
                 }
             } else {
@@ -42,12 +62,11 @@ struct PlayerView: View {
 
             HStack {
                 Button(action: {
-                    // playerViewModel.playPrevious()
+                    playerViewModel.playPreviousSong()
                 }) {
                     Image(systemName: "backward.fill")
                         .font(.title2)
                 }
-                .disabled(true)
 
                 Button(action: {
                     playerViewModel.togglePlayPause()
@@ -57,12 +76,11 @@ struct PlayerView: View {
                 }
 
                 Button(action: {
-                    // playerViewModel.playNext()
+                    playerViewModel.playNextSong()
                 }) {
                     Image(systemName: "forward.fill")
                         .font(.title2)
                 }
-                .disabled(true)
             }
         }
         .padding()
@@ -76,7 +94,6 @@ struct PlayerView: View {
         }
         .onDisappear {
            if playerViewModel.isPlaying {
-               print("DEBUG: PlayerView исчезает, ставим на паузу.")
                playerViewModel.togglePlayPause()
            }
        }

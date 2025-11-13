@@ -10,6 +10,7 @@ class AppCoordinator: ObservableObject {
     @Published var albumDetailInteractor: AlbumDetailInteractor
     @Published var albumDetailViewModel: AlbumDetailViewModel
     @Published var homeViewModel: HomeViewModel
+    @Published var searchViewModel: SearchViewModel
 
     init() {
         do {
@@ -25,8 +26,16 @@ class AppCoordinator: ObservableObject {
             let playerVM = PlayerViewModel(playerInteractor: playerInteract, playerService: playerServ)
             let albumDetailInteract = AlbumDetailInteractor(musicRepository: musicRepo, playerInteractor: playerInteract)
             let albumDetailVM = AlbumDetailViewModel(interactor: albumDetailInteract)
+            
             let homeInteractor = HomeInteractor(musicRepository: musicRepo)
             let homeVM = HomeViewModel(interactor: homeInteractor)
+            
+            // 🔥 ОБНОВЛЯЕМ: передаем PlayerInteractor в SearchInteractor
+            let searchInteractor = SearchInteractor(
+                musicRepository: musicRepo,
+                playerInteractor: playerInteract // 🔥 ДОБАВЛЯЕМ PlayerInteractor
+            )
+            let searchVM = SearchViewModel(interactor: searchInteractor)
 
             self.musicRepository = musicRepo
             self.playerService = playerServ
@@ -35,6 +44,7 @@ class AppCoordinator: ObservableObject {
             self.albumDetailInteractor = albumDetailInteract
             self.albumDetailViewModel = albumDetailVM
             self.homeViewModel = homeVM
+            self.searchViewModel = searchVM
 
         } catch {
             fatalError("Failed to create AppCoordinator: \(error)")
@@ -67,8 +77,11 @@ struct ContentView: View {
 
             // MARK: - Search Tab
             NavigationStack {
-                Text("Search Tab - Coming Soon")
-                    .navigationTitle("Search")
+                SearchView(
+                    viewModel: appCoordinator.searchViewModel,
+                    albumDetailViewModel: appCoordinator.albumDetailViewModel,
+                    playerViewModel: appCoordinator.playerViewModel
+                )
             }
             .tabItem {
                 Image(systemName: "magnifyingglass")

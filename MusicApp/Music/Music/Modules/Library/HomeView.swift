@@ -8,6 +8,7 @@ struct HomeView: View {
     let playerViewModel: PlayerViewModel
 
     var body: some View {
+
         NavigationStack {
             ScrollView {
                 if viewModel.isLoading {

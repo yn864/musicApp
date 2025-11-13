@@ -10,6 +10,9 @@ protocol MusicRepositoryProtocol {
     func fetchArtistsFromAPI() async throws -> [Artist]
     func fetchArtistFromAPI(by id: Artist.ID) async throws -> Artist?
 
+    func searchSongs(query: String) async throws -> [Song]
+    func searchAlbums(query: String) async throws -> [Album]
+
     // MARK: - Store/Update in SwiftData only (user actions or sync)
     func storeSong(_ song: Song) async throws
     func storeAlbum(_ album: Album) async throws
@@ -26,7 +29,6 @@ protocol MusicRepositoryProtocol {
     func getLikedSongsFromLocal() async throws -> [Song]
     
     func fetchImage(from urlString: String) async throws -> Data?
-
 }
 
 // MARK: - MusicRepository Implementation
@@ -62,6 +64,16 @@ final class MusicRepository: MusicRepositoryProtocol {
 
     func fetchArtistFromAPI(by id: Artist.ID) async throws -> Artist? {
         return try await networkService.fetchArtist(by: id)
+    }
+
+    func searchSongs(query: String) async throws -> [Song] {
+        let searchResults = try await networkService.search(query: query)
+        return searchResults.songs
+    }
+    
+    func searchAlbums(query: String) async throws -> [Album] {
+        let searchResults = try await networkService.search(query: query)
+        return searchResults.albums
     }
 
     // MARK: - Store/Update in SwiftData only (Implementation)
@@ -113,5 +125,4 @@ final class MusicRepository: MusicRepositoryProtocol {
     func fetchImage(from urlString: String) async throws -> Data? {
         return try await networkService.fetchImage(from: urlString)
     }
-
 }

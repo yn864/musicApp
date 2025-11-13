@@ -1,5 +1,11 @@
 import Foundation
 
+// MARK: - SearchResults
+struct SearchResults: Codable {
+    let songs: [Song]
+    let albums: [Album]
+}
+
 // MARK: - NetworkServiceProtocol
 protocol NetworkServiceProtocol {
     // MARK: - Fetch Lists
@@ -7,10 +13,12 @@ protocol NetworkServiceProtocol {
     func fetchAlbums() async throws -> [Album]
     func fetchArtists() async throws -> [Artist]
 
-    // MARK: - Fetch Single Entity by ID (NEW)
+    // MARK: - Fetch Single Entity by ID
     func fetchSong(by id: String) async throws -> Song?
     func fetchAlbum(by id: String) async throws -> Album?
     func fetchArtist(by id: String) async throws -> Artist?
+    
+    func search(query: String) async throws -> SearchResults
     
     func fetchImage(from urlString: String) async throws -> Data?
 }
@@ -39,7 +47,7 @@ final class NetworkService: NetworkServiceProtocol {
         return try await fetchData(from: endpointURL, as: [Artist].self)
     }
 
-    // MARK: - Fetch Single Entity by ID (Implementation) (NEW)
+    // MARK: - Fetch Single Entity by ID (Implementation)
     func fetchSong(by id: String) async throws -> Song? {
         let endpointURL = baseURL.appendingPathComponent("songs").appendingPathComponent(id)
         return try await fetchData(from: endpointURL, as: Song.self)
@@ -53,6 +61,17 @@ final class NetworkService: NetworkServiceProtocol {
     func fetchArtist(by id: String) async throws -> Artist? {
         let endpointURL = baseURL.appendingPathComponent("artists").appendingPathComponent(id)
         return try await fetchData(from: endpointURL, as: Artist.self)
+    }
+    
+    func search(query: String) async throws -> SearchResults {
+        var components = URLComponents(url: baseURL.appendingPathComponent("search"), resolvingAgainstBaseURL: false)
+        components?.queryItems = [URLQueryItem(name: "q", value: query)]
+        
+        guard let searchURL = components?.url else {
+            throw NetworkError.invalidURL
+        }
+        
+        return try await fetchData(from: searchURL, as: SearchResults.self)
     }
     
     func fetchImage(from urlString: String) async throws -> Data? {

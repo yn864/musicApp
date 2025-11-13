@@ -21,6 +21,10 @@ class MusicAPIHandler(http.server.BaseHTTPRequestHandler):
         query_params = parse_qs(parsed_path.query)
 
         path_parts = path.strip('/').split('/')
+        
+        if path == '/search' and 'q' in query_params:
+            self.handle_search_request(query_params)
+            return
 
         # Проверяем на *специфичные* API-маршруты с ID: /albums/{id}, /songs/{id}, /artists/{id}
         # Условие: начинается с 'albums', 'songs', или 'artists' И содержит РОВНО ОДИН сегмент ID после
@@ -47,8 +51,66 @@ class MusicAPIHandler(http.server.BaseHTTPRequestHandler):
             self.handle_static_file_request(path)
             return # Завершаем обработку после отправки файла
 
+
+        
         # Если ничего не подошло
         self.send_error(404, "Not Found")
+        
+    def handle_search_request(self, query_params):
+        """Обработка поисковых запросов /search?q=query"""
+        try:
+            search_query = query_params.get('q', [''])[0].lower().strip()
+            
+            print(f"DEBUG: Search query: '{search_query}'")
+            
+            if not search_query:
+                self.send_json_response({"songs": [], "albums": []})
+                return
+                
+            with open(DATA_FILE, 'r', encoding='utf-8') as f:
+                catalog = json.load(f)
+
+            all_songs = catalog.get('songs', [])
+            all_albums = catalog.get('albums', [])
+            all_artists = catalog.get('artists', [])
+            
+            # 🔥 СОЗДАЕМ СЛОВАРЬ artist_id -> artist_name для быстрого поиска
+            artist_names = {artist['id']: artist['name'].lower() for artist in all_artists}
+            
+            # 🔥 ПОИСК ПЕСЕН: по title ИЛИ по artist name
+            matched_songs = []
+            for song in all_songs:
+                song_title = song.get('title', '').lower()
+                artist_name = artist_names.get(song.get('artistID', ''), '')
+                
+                if (search_query in song_title or
+                    search_query in artist_name):
+                    matched_songs.append(song)
+            
+            # 🔥 ПОИСК АЛЬБОМОВ: по title ИЛИ по artist name
+            matched_albums = []
+            for album in all_albums:
+                album_title = album.get('title', '').lower()
+                artist_name = artist_names.get(album.get('artistID', ''), '')
+                
+                if (search_query in album_title or
+                    search_query in artist_name):
+                    matched_albums.append(album)
+
+            print(f"DEBUG: Found {len(matched_songs)} songs, {len(matched_albums)} albums")
+            
+            results = {
+                "songs": matched_songs,
+                "albums": matched_albums
+            }
+            
+            self.send_json_response(results)
+            
+        except FileNotFoundError:
+            self.send_error(500, "Data file not found")
+        except json.JSONDecodeError:
+            self.send_error(500, "Error parsing data file")
+           
 
     def handle_api_list_request(self, path):
         """Обработка запросов к API для получения списков (/songs, /albums, /artists)"""

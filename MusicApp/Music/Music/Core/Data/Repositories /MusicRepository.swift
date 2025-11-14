@@ -29,6 +29,12 @@ protocol MusicRepositoryProtocol {
     func getLikedSongsFromLocal() async throws -> [Song]
     
     func fetchImage(from urlString: String) async throws -> Data?
+    
+    func getAllPlaylistsFromLocal() async throws -> [Playlist]
+    func getPlaylistFromLocal(by id: Playlist.ID) async throws -> Playlist?
+    func createPlaylist(_ playlist: Playlist) async throws
+    func updatePlaylist(_ playlist: Playlist) async throws
+    func deletePlaylist(by id: Playlist.ID) async throws
 }
 
 // MARK: - MusicRepository Implementation
@@ -124,5 +130,25 @@ final class MusicRepository: MusicRepositoryProtocol {
     
     func fetchImage(from urlString: String) async throws -> Data? {
         return try await networkService.fetchImage(from: urlString)
+    }
+    
+    func getAllPlaylistsFromLocal() async throws -> [Playlist] {
+        return try storageService.getAllPlaylists()
+    }
+    
+    func getPlaylistFromLocal(by id: Playlist.ID) async throws -> Playlist? {
+        return try storageService.getPlaylist(by: id)
+    }
+    
+    func createPlaylist(_ playlist: Playlist) async throws {
+        try storageService.createPlaylist(playlist)
+    }
+    
+    func updatePlaylist(_ playlist: Playlist) async throws {
+        try storageService.updatePlaylist(playlist)
+    }
+    
+    func deletePlaylist(by id: Playlist.ID) async throws {
+        try storageService.deletePlaylist(by: id)
     }
 }

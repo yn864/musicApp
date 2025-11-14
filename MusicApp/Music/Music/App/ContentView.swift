@@ -11,10 +11,15 @@ class AppCoordinator: ObservableObject {
     @Published var albumDetailViewModel: AlbumDetailViewModel
     @Published var homeViewModel: HomeViewModel
     @Published var searchViewModel: SearchViewModel
+    @Published var playlistService: PlaylistService
+    @Published var playlistInteractor: PlaylistInteractor
+    @Published var playlistViewModel: PlaylistViewModel
+    @Published var libraryInteractor: LibraryInteractor
+    @Published var libraryViewModel: LibraryViewModel
 
     init() {
         do {
-            let schema = Schema([SwiftDataSong.self, SwiftDataAlbum.self, SwiftDataArtist.self])
+            let schema = Schema([SwiftDataSong.self, SwiftDataAlbum.self, SwiftDataArtist.self, SwiftDataPlaylist.self])
             let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
             let container = try ModelContainer(for: schema, configurations: [configuration])
 
@@ -26,16 +31,22 @@ class AppCoordinator: ObservableObject {
             let playerVM = PlayerViewModel(playerInteractor: playerInteract, playerService: playerServ)
             let albumDetailInteract = AlbumDetailInteractor(musicRepository: musicRepo, playerInteractor: playerInteract)
             let albumDetailVM = AlbumDetailViewModel(interactor: albumDetailInteract)
-            
             let homeInteractor = HomeInteractor(musicRepository: musicRepo)
             let homeVM = HomeViewModel(interactor: homeInteractor)
-            
-            // 🔥 ОБНОВЛЯЕМ: передаем PlayerInteractor в SearchInteractor
             let searchInteractor = SearchInteractor(
                 musicRepository: musicRepo,
-                playerInteractor: playerInteract // 🔥 ДОБАВЛЯЕМ PlayerInteractor
+                playerInteractor: playerInteract
             )
             let searchVM = SearchViewModel(interactor: searchInteractor)
+            let playlistServ = PlaylistService(musicRepository: musicRepo)
+            let playlistInteract = PlaylistInteractor(
+                playlistService: playlistServ,
+                playerInteractor: playerInteract,
+                musicRepository: musicRepo
+            )
+            let playlistVM = PlaylistViewModel(interactor: playlistInteract)
+            let libraryInteract = LibraryInteractor(musicRepository: musicRepo)
+            let libraryVM = LibraryViewModel(interactor: libraryInteract)
 
             self.musicRepository = musicRepo
             self.playerService = playerServ
@@ -45,6 +56,12 @@ class AppCoordinator: ObservableObject {
             self.albumDetailViewModel = albumDetailVM
             self.homeViewModel = homeVM
             self.searchViewModel = searchVM
+            self.playlistService = playlistServ
+            self.playlistInteractor = playlistInteract
+            self.playlistViewModel = playlistVM
+            self.libraryInteractor = libraryInteract
+            self.libraryViewModel = libraryVM
+            
 
         } catch {
             fatalError("Failed to create AppCoordinator: \(error)")
@@ -91,8 +108,11 @@ struct ContentView: View {
 
             // MARK: - Library Tab
             NavigationStack {
-                Text("Library Tab - Coming Soon")
-                    .navigationTitle("Library")
+                LibraryView(
+                    viewModel: appCoordinator.libraryViewModel,
+                    playerViewModel: appCoordinator.playerViewModel,
+                    playlistViewModel: appCoordinator.playlistViewModel
+                )
             }
             .tabItem {
                 Image(systemName: "music.note.list")

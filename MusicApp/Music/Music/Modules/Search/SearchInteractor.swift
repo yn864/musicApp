@@ -4,15 +4,15 @@ import Foundation
 protocol SearchInteractorProtocol {
     func searchSongs(query: String) async throws -> [Song]
     func searchAlbums(query: String) async throws -> [Album]
-    func playSong(_ song: Song) async // 🔥 ДОБАВЛЯЕМ
+    func playSong(_ song: Song) async
 }
 
 // MARK: - SearchInteractor
 final class SearchInteractor: SearchInteractorProtocol {
     private let musicRepository: MusicRepositoryProtocol
-    private let playerInteractor: PlayerInteractorProtocol // 🔥 ДОБАВЛЯЕМ
+    private let playerInteractor: PlayerInteractorProtocol
     
-    init(musicRepository: MusicRepositoryProtocol, playerInteractor: PlayerInteractorProtocol) { // 🔥 ИЗМЕНЯЕМ
+    init(musicRepository: MusicRepositoryProtocol, playerInteractor: PlayerInteractorProtocol) {
         self.musicRepository = musicRepository
         self.playerInteractor = playerInteractor
     }
@@ -25,7 +25,7 @@ final class SearchInteractor: SearchInteractorProtocol {
         return try await musicRepository.searchAlbums(query: query)
     }
     
-    func playSong(_ song: Song) async { // 🔥 РЕАЛИЗУЕМ
+    func playSong(_ song: Song) async { 
         try? await playerInteractor.playSong(with: song.id, from: [song.id])
     }
 }

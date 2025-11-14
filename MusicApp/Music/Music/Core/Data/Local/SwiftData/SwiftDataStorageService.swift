@@ -35,6 +35,16 @@ protocol SwiftDataStorageServiceProtocol {
     func deleteSong(by id: Song.ID) throws
     func deleteAlbum(by id: Album.ID) throws
     func deleteArtist(by id: Artist.ID) throws
+    
+    
+    // MARK: - Playlist Methods
+    func createPlaylist(_ playlist: Playlist) throws
+    func getAllPlaylists() throws -> [Playlist]
+    func getPlaylist(by id: Playlist.ID) throws -> Playlist?
+    func updatePlaylist(_ playlist: Playlist) throws
+    func deletePlaylist(by id: Playlist.ID) throws
+    func addSongToPlaylist(songID: Song.ID, playlistID: Playlist.ID) throws
+    func removeSongFromPlaylist(songID: Song.ID, playlistID: Playlist.ID) throws
 }
 
 // MARK: - Storage Error
@@ -332,4 +342,104 @@ class SwiftDataStorageService: SwiftDataStorageServiceProtocol {
         let results = try container.mainContext.fetch(descriptor)
         return results.first
     }
+    
+    
+    @MainActor
+    func createPlaylist(_ domainPlaylist: Playlist) throws {
+        let context = ModelContext(container)
+        let sdPlaylist = SwiftDataPlaylist.fromDomainModel(domainPlaylist)
+        
+        if !domainPlaylist.songIDs.isEmpty {
+            let sdSongs = try getSongsSD(by: domainPlaylist.songIDs, in: context)
+            sdPlaylist.songs = sdSongs
+        }
+        
+        context.insert(sdPlaylist)
+        try context.save()
+    }
+    
+    @MainActor
+    func getAllPlaylists() throws -> [Playlist] {
+        let descriptor = FetchDescriptor<SwiftDataPlaylist>(
+            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+        )
+        let sdPlaylists = try container.mainContext.fetch(descriptor)
+        return sdPlaylists.map { $0.toDomainModel() }
+    }
+    
+    @MainActor
+    func getPlaylist(by id: Playlist.ID) throws -> Playlist? {
+        let predicate = #Predicate<SwiftDataPlaylist> { playlist in
+            playlist.id == id
+        }
+        let descriptor = FetchDescriptor<SwiftDataPlaylist>(predicate: predicate)
+        let sdPlaylists = try container.mainContext.fetch(descriptor)
+        return sdPlaylists.first?.toDomainModel()
+    }
+    
+    @MainActor
+    func updatePlaylist(_ domainPlaylist: Playlist) throws {
+        guard let sdPlaylist = try getPlaylistSD(by: domainPlaylist.id) else {
+            throw StorageError.entityNotFound
+        }
+        
+        sdPlaylist.name = domainPlaylist.name
+        sdPlaylist.songIDs = domainPlaylist.songIDs
+        
+        if !domainPlaylist.songIDs.isEmpty {
+            let sdSongs = try getSongsSD(by: domainPlaylist.songIDs, in: container.mainContext)
+            sdPlaylist.songs = sdSongs
+        } else {
+            sdPlaylist.songs = []
+        }
+        
+        try container.mainContext.save()
+    }
+    
+    @MainActor
+    func deletePlaylist(by id: Playlist.ID) throws {
+        guard let sdPlaylist = try getPlaylistSD(by: id) else {
+            throw StorageError.entityNotFound
+        }
+        container.mainContext.delete(sdPlaylist)
+        try container.mainContext.save()
+    }
+    
+    @MainActor
+    func addSongToPlaylist(songID: Song.ID, playlistID: Playlist.ID) throws {
+        guard let sdPlaylist = try getPlaylistSD(by: playlistID),
+              let sdSong = try getSongSD(by: songID) else {
+            throw StorageError.entityNotFound
+        }
+        
+        if !sdPlaylist.songs.contains(where: { $0.id == songID }) {
+            sdPlaylist.songs.append(sdSong)
+            sdPlaylist.songIDs.append(songID)
+            try container.mainContext.save()
+        }
+    }
+    
+    @MainActor
+    func removeSongFromPlaylist(songID: Song.ID, playlistID: Playlist.ID) throws {
+        guard let sdPlaylist = try getPlaylistSD(by: playlistID) else {
+            throw StorageError.entityNotFound
+        }
+        
+        sdPlaylist.songs.removeAll { $0.id == songID }
+        sdPlaylist.songIDs.removeAll { $0 == songID }
+        
+        try container.mainContext.save()
+    }
+    
+    // MARK: - Private Helper Methods for Playlists
+    @MainActor
+    private func getPlaylistSD(by id: Playlist.ID) throws -> SwiftDataPlaylist? {
+        let predicate = #Predicate<SwiftDataPlaylist> { playlist in
+            playlist.id == id
+        }
+        let descriptor = FetchDescriptor<SwiftDataPlaylist>(predicate: predicate)
+        let results = try container.mainContext.fetch(descriptor)
+        return results.first
+    }
+    
 }

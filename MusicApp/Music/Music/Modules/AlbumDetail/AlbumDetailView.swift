@@ -7,7 +7,6 @@ struct AlbumDetailView: View {
     @ObservedObject var viewModel: AlbumDetailViewModel
     let albumID: String
     let playerViewModel: PlayerViewModel
-
     
     // MARK: - Init
     init(viewModel: AlbumDetailViewModel, albumID: String, playerViewModel: PlayerViewModel) {
